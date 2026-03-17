@@ -103,9 +103,11 @@ export function Home() {
           <tbody>
             {leaderboard.map((row, i) => (
               <tr key={row.participant.id}>
-                <td>{i + 1}</td>
+                <td className={`rank-cell rank-${i < 3 ? i + 1 : ''}`}>
+                  {i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}
+                </td>
                 <td>{row.participant.name}{row.participant.nickname ? ` (${row.participant.nickname})` : ''}</td>
-                <td>${row.total_winnings.toFixed(2)}</td>
+                <td className="winnings-cell">${row.total_winnings.toFixed(2)}</td>
                 <td>{row.matches_won}</td>
               </tr>
             ))}

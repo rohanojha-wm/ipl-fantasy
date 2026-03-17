@@ -98,9 +98,12 @@ export function Matches() {
                 <span className="no-standings">No standings yet</span>
               ) : (
                 m.standings.map((s, i) => (
-                  <span key={s.id} className="standing">
-                    {i > 0 && ' → '}
-                    {s.participant.name} (${Number(s.dollars_earned || 0).toFixed(2)})
+                  <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                    {i > 0 && <span className="standing-arrow">→</span>}
+                    <span className="standing-chip">
+                      {s.participant.name}
+                      <span className="amount">${Number(s.dollars_earned || 0).toFixed(2)}</span>
+                    </span>
                   </span>
                 ))
               )}
