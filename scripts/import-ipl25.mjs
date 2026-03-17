@@ -75,7 +75,8 @@ function getMatchType(rowIndex, totalRows) {
 }
 
 async function main() {
-  const xlsxPath = process.argv[2] || resolve(__dirname, '../../IPL25.xlsx');
+  const args = process.argv.slice(2).filter((a) => a !== '--replace');
+  const xlsxPath = args[0] || resolve(__dirname, '../../IPL25.xlsx');
   console.log('Reading:', xlsxPath);
 
   const buf = readFileSync(xlsxPath);
@@ -222,13 +223,21 @@ async function main() {
     const { data: config } = await supabase.from('payout_config').select('*').eq('season_id', seasonId).eq('phase', phase).single();
     const posAmt = config ? [config.position_1st, config.position_2nd, config.position_3rd, config.position_4th, config.position_5th] : [5, 4, 3, 2, 1];
 
+    // Tie logic (pooled): when N tie for a slot, split positions P..P+N-1
     const toInsert = [];
+    let nextSlotStart = 1;
     for (const s of m.standings) {
-      const amt = (posAmt[s.position - 1] || 0) / s.names.length;
+      const count = s.names.length;
+      let pool = 0;
+      for (let i = 0; i < count && nextSlotStart + i <= 5; i++) {
+        pool += posAmt[nextSlotStart + i - 1] || 0;
+      }
+      const amt = count > 0 ? pool / count : 0;
       for (const name of s.names) {
         const pid = nameToId[name];
         if (pid) toInsert.push({ match_id: match.id, position: s.position, participant_id: pid, dollars_earned: amt });
       }
+      nextSlotStart += count;
     }
     if (toInsert.length) await supabase.from('standings').insert(toInsert);
   }

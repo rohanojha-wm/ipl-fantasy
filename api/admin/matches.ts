@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdminAuth } from '../lib/auth';
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -8,15 +9,9 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-function requireAuth(req: VercelRequest): boolean {
-  const auth = req.headers.authorization;
-  return !!auth?.startsWith('Bearer ');
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (!requireAuth(req)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const auth = await requireAdminAuth(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
   try {
     const supabase = getSupabase();

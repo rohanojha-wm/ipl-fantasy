@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useEffect, useState, useMemo } from 'react';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '../lib/supabase';
 import type { Participant, Season } from '../types';
 
@@ -69,22 +69,37 @@ export function Graph() {
     fetch();
   }, [selectedSeason]);
 
+  const barData = useMemo(() => {
+    if (chartData.length === 0) return [];
+    const last = chartData.at(-1)!;
+    return participants
+      .map((p) => {
+        const v = Number(last[p.name] ?? 0);
+        return {
+          name: p.nickname ? `${p.name} (${p.nickname})` : p.name,
+          winnings: v,
+          participantId: p.id,
+        };
+      })
+      .sort((a, b) => b.winnings - a.winnings);
+  }, [chartData, participants]);
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
 
   const colors = [
-    { stroke: '#22c55e', fill: 'rgba(34, 197, 94, 0.15)' },
-    { stroke: '#3b82f6', fill: 'rgba(59, 130, 246, 0.15)' },
-    { stroke: '#f59e0b', fill: 'rgba(245, 158, 11, 0.15)' },
-    { stroke: '#ef4444', fill: 'rgba(239, 68, 68, 0.15)' },
-    { stroke: '#8b5cf6', fill: 'rgba(139, 92, 246, 0.15)' },
-    { stroke: '#ec4899', fill: 'rgba(236, 72, 153, 0.15)' },
-    { stroke: '#06b6d4', fill: 'rgba(6, 182, 212, 0.15)' },
-    { stroke: '#84cc16', fill: 'rgba(132, 204, 22, 0.15)' },
-    { stroke: '#f97316', fill: 'rgba(249, 115, 22, 0.15)' },
-    { stroke: '#6366f1', fill: 'rgba(99, 102, 241, 0.15)' },
-    { stroke: '#14b8a6', fill: 'rgba(20, 184, 166, 0.15)' },
-    { stroke: '#a855f7', fill: 'rgba(168, 85, 247, 0.15)' },
+    { stroke: '#e0a722', fill: 'rgba(224, 167, 34, 0.2)' },
+    { stroke: '#60a5fa', fill: 'rgba(96, 165, 250, 0.15)' },
+    { stroke: '#34d399', fill: 'rgba(52, 211, 153, 0.15)' },
+    { stroke: '#f472b6', fill: 'rgba(244, 114, 182, 0.15)' },
+    { stroke: '#a78bfa', fill: 'rgba(167, 139, 250, 0.15)' },
+    { stroke: '#38bdf8', fill: 'rgba(56, 189, 248, 0.15)' },
+    { stroke: '#fbbf24', fill: 'rgba(251, 191, 36, 0.15)' },
+    { stroke: '#4ade80', fill: 'rgba(74, 222, 128, 0.15)' },
+    { stroke: '#c084fc', fill: 'rgba(192, 132, 252, 0.15)' },
+    { stroke: '#2dd4bf', fill: 'rgba(45, 212, 191, 0.15)' },
+    { stroke: '#fb923c', fill: 'rgba(251, 146, 60, 0.15)' },
+    { stroke: '#818cf8', fill: 'rgba(129, 140, 248, 0.15)' },
   ];
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) => {
@@ -101,6 +116,8 @@ export function Graph() {
     );
   };
 
+  const BAR_COLOR = '#e0a722';
+
   return (
     <div className="page graph">
       <h1>Cumulative Winnings</h1>
@@ -115,33 +132,49 @@ export function Graph() {
         {chartData.length === 0 ? (
           <p className="empty">No data yet.</p>
         ) : (
-          <ResponsiveContainer width="100%" height={420}>
-            <AreaChart data={chartData}>
-              <defs>
-                {participants.map((p, i) => (
-                  <linearGradient key={p.id} id={`gradient-${p.id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={colors[i % colors.length].stroke} stopOpacity={0.4} />
-                    <stop offset="100%" stopColor={colors[i % colors.length].stroke} stopOpacity={0} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(51, 65, 85, 0.6)" />
-              <XAxis dataKey="date" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
-              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ paddingTop: '1rem' }} formatter={(value) => <span style={{ color: 'var(--text)' }}>{value}</span>} />
-              {participants.map((p, i) => (
-                <Area
-                  key={p.id}
-                  type="monotone"
-                  dataKey={p.name}
-                  stroke={colors[i % colors.length].stroke}
-                  strokeWidth={2.5}
-                  fill={`url(#gradient-${p.id})`}
-                />
-              ))}
-            </AreaChart>
-          </ResponsiveContainer>
+          <>
+            <div className="chart-section">
+              <h2 className="chart-title">Winnings ($)</h2>
+              <ResponsiveContainer width="100%" height={Math.max(320, barData.length * 36)}>
+                <BarChart data={barData} layout="vertical" margin={{ top: 8, right: 60, left: 100, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(51, 65, 85, 0.6)" horizontal={false} />
+                  <XAxis type="number" domain={[0, 'auto']} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                  <YAxis type="category" dataKey="name" width={95} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                  <Bar dataKey="winnings" fill={BAR_COLOR} radius={[0, 4, 4, 0]} label={{ position: 'right', fill: 'var(--text)', formatter: (v: unknown) => `$${Number(v).toFixed(2)}` }} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="chart-section">
+              <h2 className="chart-title">Over Time</h2>
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={chartData}>
+                  <defs>
+                    {participants.map((p, i) => (
+                      <linearGradient key={p.id} id={`gradient-${p.id}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={colors[i % colors.length].stroke} stopOpacity={0.4} />
+                        <stop offset="100%" stopColor={colors[i % colors.length].stroke} stopOpacity={0} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(51, 65, 85, 0.6)" />
+                  <XAxis dataKey="date" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ paddingTop: '1rem' }} formatter={(value) => <span style={{ color: 'var(--text)' }}>{value}</span>} />
+                  {participants.map((p, i) => (
+                    <Area
+                      key={p.id}
+                      type="monotone"
+                      dataKey={p.name}
+                      stroke={colors[i % colors.length].stroke}
+                      strokeWidth={2.5}
+                      fill={`url(#gradient-${p.id})`}
+                    />
+                  ))}
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -6,6 +6,39 @@ async function getAdminToken(): Promise<string | null> {
 
 const DEV_ADMIN_PASSWORD = 'admin123';
 
+export async function getAuthMode(): Promise<'otp' | 'password'> {
+  try {
+    const res = await fetch(`${API_BASE}/admin/auth-mode`);
+    if (res.ok) {
+      const { mode } = await res.json();
+      return mode === 'otp' ? 'otp' : 'password';
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'password';
+}
+
+export async function adminLoginWithOtp(email: string, otp: string): Promise<{ ok: boolean; error?: string }> {
+  const { supabase } = await import('./supabase');
+  if (!supabase) return { ok: false, error: 'Supabase not configured' };
+  const { data, error } = await supabase.auth.verifyOtp({ email, token: otp, type: 'email' });
+  if (error) return { ok: false, error: error.message };
+  if (data.session?.access_token) {
+    sessionStorage.setItem('admin_token', data.session.access_token);
+    return { ok: true };
+  }
+  return { ok: false, error: 'Verification failed' };
+}
+
+export async function adminRequestOtp(email: string): Promise<{ ok: boolean; error?: string }> {
+  const { supabase } = await import('./supabase');
+  if (!supabase) return { ok: false, error: 'Supabase not configured' };
+  const { error } = await supabase.auth.signInWithOtp({ email });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function adminLogin(password: string): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}/admin/login`, {
@@ -37,6 +70,8 @@ export async function adminLogin(password: string): Promise<boolean> {
 
 export async function adminLogout(): Promise<void> {
   sessionStorage.removeItem('admin_token');
+  const { supabase } = await import('./supabase');
+  if (supabase) supabase.auth.signOut();
 }
 
 export async function isAdminAuthenticated(): Promise<boolean> {

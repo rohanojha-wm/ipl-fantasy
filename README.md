@@ -49,13 +49,18 @@ Set env in Vercel: `ADMIN_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 3. Add environment variables:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `ADMIN_PASSWORD`
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ADMIN_PASSWORD` (when using password auth)
+   - `ADMIN_EMAILS` (optional: comma-separated admin emails for OTP login, e.g. `a@x.com,b@x.com,c@x.com`)
 4. Deploy
 
 ## Admin
 
-- Default password: `admin123` (override with `ADMIN_PASSWORD` env)
-- Admin: `/admin` – manage matches, participants, payout config
-- Public: leaderboard, matches, graph, ledger – no login
+**Auth modes:**
+- **Password** (default): Set `ADMIN_PASSWORD` only. Single shared password.
+- **Email OTP** (3 admins): Set `ADMIN_EMAILS=email1@x.com,email2@x.com,email3@x.com`. Each admin signs in with a one-time code sent to their email. Free, no SMS cost.
+
+For OTP mode: enable **Email** provider in Supabase Dashboard → Authentication → Providers.
+
+Admin: `/admin` – manage matches, participants, payout config. Public: leaderboard, matches, graph, ledger – no login.

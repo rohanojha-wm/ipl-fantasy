@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdminAuth } from '../../lib/auth';
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -8,12 +9,9 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-function requireAuth(req: VercelRequest): boolean {
-  return !!req.headers.authorization?.startsWith('Bearer ');
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (!requireAuth(req)) return res.status(401).json({ error: 'Unauthorized' });
+  const auth = await requireAdminAuth(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
   const id = req.query.id as string;
   if (!id) return res.status(400).json({ error: 'Missing participant id' });

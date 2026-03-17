@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdminAuth } from '../lib/auth';
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -8,12 +9,9 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-function requireAuth(req: VercelRequest): boolean {
-  return !!req.headers.authorization?.startsWith('Bearer ');
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (!requireAuth(req)) return res.status(401).json({ error: 'Unauthorized' });
+  const auth = await requireAdminAuth(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { season_id, phase, position_1st, position_2nd, position_3rd, position_4th, position_5th } = req.body || {};

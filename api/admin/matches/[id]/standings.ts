@@ -1,15 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdminAuth } from '../../../lib/auth';
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error('Supabase not configured');
   return createClient(url, key);
-}
-
-function requireAuth(req: VercelRequest): boolean {
-  return !!req.headers.authorization?.startsWith('Bearer ');
 }
 
 const MATCH_TYPE_TO_PHASE: Record<string, string> = {
@@ -23,7 +20,8 @@ const MATCH_TYPE_TO_PHASE: Record<string, string> = {
 const PHASE_POSITION_KEYS = ['position_1st', 'position_2nd', 'position_3rd', 'position_4th', 'position_5th'];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (!requireAuth(req)) return res.status(401).json({ error: 'Unauthorized' });
+  const auth = await requireAdminAuth(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const matchId = req.query.id as string;
@@ -44,20 +42,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await supabase.from('standings').delete().eq('match_id', matchId);
 
+    // Tie logic (pooled): when N people tie for a slot, they split the combined payout
+    // for positions P..P+N-1 (e.g. 2 tied for 2nd → split 2nd+3rd place money)
     const toInsert: { match_id: string; position: number; participant_id: string; dollars_earned: number }[] = [];
+    const cfg = config as Record<string, number>;
+    let nextSlotStart = 1;
 
-    for (const s of standings) {
-      const pos = parseInt(s.position, 10);
+    const sorted = [...standings].sort((a, b) => parseInt(String(a.position), 10) - parseInt(String(b.position), 10));
+    for (const s of sorted) {
+      const slotPos = parseInt(s.position, 10);
       const pids = Array.isArray(s.participant_ids) ? s.participant_ids : [s.participant_id].filter(Boolean);
-      if (pos < 1 || pos > 5 || pids.length === 0) continue;
+      if (slotPos < 1 || slotPos > 5 || pids.length === 0) continue;
 
-      const key = PHASE_POSITION_KEYS[pos - 1];
-      const total = (config as Record<string, number>)[key] || 0;
-      const each = total / pids.length;
+      const count = pids.length;
+      let pool = 0;
+      for (let i = 0; i < count && nextSlotStart + i <= 5; i++) {
+        const key = PHASE_POSITION_KEYS[nextSlotStart + i - 1];
+        pool += cfg[key] || 0;
+      }
+      const each = count > 0 ? pool / count : 0;
 
       for (const pid of pids) {
-        toInsert.push({ match_id: matchId, position: pos, participant_id: pid, dollars_earned: each });
+        toInsert.push({ match_id: matchId, position: slotPos, participant_id: pid, dollars_earned: each });
       }
+      nextSlotStart += count;
     }
 
     if (toInsert.length > 0) {
