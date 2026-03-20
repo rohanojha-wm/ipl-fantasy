@@ -19,7 +19,7 @@ function computeDefaultAmounts(
   config: PayoutConfig
 ): Record<string, number> {
   const amounts: Record<string, number> = {};
-  const cfg = config as Record<string, number>;
+  const cfg = config as unknown as Record<string, number>;
   let nextSlotStart = 1;
 
   const sorted = [...standings].sort((a, b) => a.position - b.position);
