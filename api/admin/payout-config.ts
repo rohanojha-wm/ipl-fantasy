@@ -11,7 +11,10 @@ function getSupabase() {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireAdminAuth(req);
-  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+  if (!auth.ok) {
+    const { status, error } = auth;
+    return res.status(status).json({ error });
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { season_id, phase, position_1st, position_2nd, position_3rd, position_4th, position_5th } = req.body || {};

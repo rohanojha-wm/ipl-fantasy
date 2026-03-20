@@ -125,7 +125,7 @@ export const adminApi = {
   deleteMatch: (id: string) =>
     adminFetch(`/admin/matches/${id}`, { method: 'DELETE' }),
 
-  setStandings: (matchId: string, standings: { position: number; participant_ids: string[] }[]) =>
+  setStandings: (matchId: string, standings: { position: number; participant_ids: string[]; amounts?: Record<string, number> }[]) =>
     adminFetch(`/admin/matches/${matchId}/standings`, {
       method: 'POST',
       body: JSON.stringify({ standings }),

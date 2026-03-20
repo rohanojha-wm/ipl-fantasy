@@ -21,7 +21,10 @@ const PHASE_POSITION_KEYS = ['position_1st', 'position_2nd', 'position_3rd', 'po
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireAdminAuth(req);
-  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+  if (!auth.ok) {
+    const { status, error } = auth;
+    return res.status(status).json({ error });
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const matchId = req.query.id as string;
@@ -49,6 +52,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let nextSlotStart = 1;
 
     const sorted = [...standings].sort((a, b) => parseInt(String(a.position), 10) - parseInt(String(b.position), 10));
+    const amountsOverride = (standings as { position: number; participant_ids: string[]; amounts?: Record<string, number> }[])
+      .reduce((acc, s) => ({ ...acc, ...(s.amounts || {}) }), {});
+
     for (const s of sorted) {
       const slotPos = parseInt(s.position, 10);
       const pids = Array.isArray(s.participant_ids) ? s.participant_ids : [s.participant_id].filter(Boolean);
@@ -60,10 +66,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const key = PHASE_POSITION_KEYS[nextSlotStart + i - 1];
         pool += cfg[key] || 0;
       }
-      const each = count > 0 ? pool / count : 0;
+      const defaultEach = count > 0 ? pool / count : 0;
 
       for (const pid of pids) {
-        toInsert.push({ match_id: matchId, position: slotPos, participant_id: pid, dollars_earned: each });
+        const amt = amountsOverride[pid] !== undefined ? Number(amountsOverride[pid]) : defaultEach;
+        toInsert.push({ match_id: matchId, position: slotPos, participant_id: pid, dollars_earned: amt });
       }
       nextSlotStart += count;
     }

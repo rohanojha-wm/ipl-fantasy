@@ -11,7 +11,10 @@ function getSupabase() {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireAdminAuth(req);
-  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+  if (!auth.ok) {
+    const { status, error } = auth;
+    return res.status(status).json({ error });
+  }
 
   const id = req.query.id as string;
   if (!id) return res.status(400).json({ error: 'Missing match id' });

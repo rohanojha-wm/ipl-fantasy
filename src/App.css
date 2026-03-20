@@ -487,6 +487,45 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.position-row-with-amounts .position-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+}
+
+.participant-with-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.amount-display {
+  display: inline-flex;
+  align-items: center;
+}
+
+.amount-input {
+  width: 4rem;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.amount-input.override {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.standings-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem 0;
+}
+
 .participant-chip {
   display: inline-flex;
   align-items: center;
