@@ -57,6 +57,11 @@ export function Home() {
     };
 
     fetchLeaderboard();
+
+    const channel = supabase!.channel('home-standings').on('postgres_changes', { event: '*', schema: 'public', table: 'standings' }, fetchLeaderboard).subscribe();
+    return () => {
+      supabase!.removeChannel(channel);
+    };
   }, [selectedSeason]);
 
   if (loading) return <div className="loading">Loading...</div>;

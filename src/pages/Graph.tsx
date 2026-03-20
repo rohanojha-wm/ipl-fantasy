@@ -50,6 +50,11 @@ export function Graph() {
     };
 
     fetch();
+
+    const channel = supabase!.channel('graph-standings').on('postgres_changes', { event: '*', schema: 'public', table: 'standings' }, fetch).subscribe();
+    return () => {
+      supabase!.removeChannel(channel);
+    };
   }, [selectedSeason]);
 
   const barData = useMemo(() => {

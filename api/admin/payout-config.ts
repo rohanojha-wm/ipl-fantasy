@@ -1,19 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 import { requireAdminAuth } from '../lib/auth.js';
-
-function getSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('Supabase not configured');
-  return createClient(url, key);
-}
+import { getSupabase } from '../lib/supabase.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireAdminAuth(req);
   if (!auth.ok) {
-    const { status, error } = auth;
-    return res.status(status).json({ error });
+    return res.status(auth.status).json({ error: auth.error });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 

@@ -53,6 +53,11 @@ export function Ledger() {
     };
 
     fetch();
+
+    const channel = supabase!.channel('ledger-standings').on('postgres_changes', { event: '*', schema: 'public', table: 'standings' }, fetch).subscribe();
+    return () => {
+      supabase!.removeChannel(channel);
+    };
   }, [selectedSeason]);
 
   if (loading) return <div className="loading">Loading...</div>;

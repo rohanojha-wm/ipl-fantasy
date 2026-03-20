@@ -1,13 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 import { requireAdminAuth } from '../../../lib/auth.js';
-
-function getSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('Supabase not configured');
-  return createClient(url, key);
-}
+import { getSupabase } from '../../../lib/supabase.js';
 
 const MATCH_TYPE_TO_PHASE: Record<string, string> = {
   round_robin: 'round_robin',
@@ -22,8 +15,7 @@ const PHASE_POSITION_KEYS = ['position_1st', 'position_2nd', 'position_3rd', 'po
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = await requireAdminAuth(req);
   if (!auth.ok) {
-    const { status, error } = auth;
-    return res.status(status).json({ error });
+    return res.status(auth.status).json({ error: auth.error });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
