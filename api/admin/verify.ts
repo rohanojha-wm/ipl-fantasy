@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAdminAuth } from '../lib/auth';
+import { requireAdminAuth } from '../lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {

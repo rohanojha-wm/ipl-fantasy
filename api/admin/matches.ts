@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { requireAdminAuth } from '../lib/auth';
+import { requireAdminAuth } from '../lib/auth.js';
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
