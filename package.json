@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "import:ipl25": "node scripts/import-ipl25.mjs",
-    "import:ipl25:replace": "node scripts/import-ipl25.mjs --replace"
+    "import:ipl25:replace": "node scripts/import-ipl25.mjs --replace",
+    "import:matches": "node scripts/import-matches-csv.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.2",
