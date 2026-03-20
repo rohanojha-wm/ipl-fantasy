@@ -36,20 +36,25 @@ export async function requireAdminAuth(req: VercelRequest): Promise<{ ok: true }
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
-    return { ok: false, status: 500, error: 'Auth not configured' };
+    return { ok: false, status: 500, error: 'Auth not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel.' };
   }
 
-  const supabase = createClient(url, anonKey);
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  try {
+    const supabase = createClient(url, anonKey);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
-  if (error || !user?.email) {
-    return { ok: false, status: 401, error: 'Invalid or expired token' };
+    if (error || !user?.email) {
+      return { ok: false, status: 401, error: 'Invalid or expired token' };
+    }
+
+    const email = user.email.toLowerCase();
+    if (!ADMIN_EMAILS.includes(email)) {
+      return { ok: false, status: 403, error: 'Not an admin' };
+    }
+
+    return { ok: true };
+  } catch (e) {
+    console.error('Auth verify error:', e);
+    return { ok: false, status: 500, error: (e as Error).message };
   }
-
-  const email = user.email.toLowerCase();
-  if (!ADMIN_EMAILS.includes(email)) {
-    return { ok: false, status: 403, error: 'Not an admin' };
-  }
-
-  return { ok: true };
 }
