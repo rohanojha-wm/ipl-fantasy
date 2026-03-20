@@ -5,6 +5,7 @@ async function getAdminToken(): Promise<string | null> {
 }
 
 const DEV_ADMIN_PASSWORD = 'admin123';
+const VITE_ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD as string | undefined;
 
 export async function getAuthMode(): Promise<'otp' | 'password'> {
   try {
@@ -53,14 +54,14 @@ export async function adminLogin(password: string): Promise<boolean> {
         return true;
       }
     }
-    // Dev fallback: when API not available (e.g. npm run dev), allow admin123
-    if (import.meta.env.DEV && password === DEV_ADMIN_PASSWORD) {
+    // Dev fallback: when API not available (e.g. npm run dev), allow configured password
+    if (import.meta.env.DEV && (password === DEV_ADMIN_PASSWORD || (VITE_ADMIN_PASSWORD && password === VITE_ADMIN_PASSWORD))) {
       sessionStorage.setItem('admin_token', 'dev-admin-token');
       return true;
     }
   } catch {
     // Dev fallback: API unreachable (404, network error)
-    if (import.meta.env.DEV && password === DEV_ADMIN_PASSWORD) {
+    if (import.meta.env.DEV && (password === DEV_ADMIN_PASSWORD || (VITE_ADMIN_PASSWORD && password === VITE_ADMIN_PASSWORD))) {
       sessionStorage.setItem('admin_token', 'dev-admin-token');
       return true;
     }

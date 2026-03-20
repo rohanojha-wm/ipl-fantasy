@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAdminAuthenticated, adminApi } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
-import type { Participant, Season } from '../../types';
+import { useSeasons } from '../../lib/useSeasons';
+import type { Participant } from '../../types';
 
 export function AdminParticipants() {
   const [auth, setAuth] = useState<boolean | null>(null);
-  const [seasons, setSeasons] = useState<Season[]>([]);
+  const { seasons } = useSeasons();
   const [selectedSeason, setSelectedSeason] = useState('');
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -21,14 +22,8 @@ export function AdminParticipants() {
   }, [navigate]);
 
   useEffect(() => {
-    if (supabase && auth) {
-      supabase.from('seasons').select('*').order('created_at', { ascending: false })
-        .then(({ data }) => {
-          setSeasons(data || []);
-          if (data?.length && !selectedSeason) setSelectedSeason(data[0].id);
-        });
-    }
-  }, [auth]);
+    if (seasons.length > 0 && !selectedSeason) setSelectedSeason(seasons[0].id);
+  }, [seasons, selectedSeason]);
 
   useEffect(() => {
     if (supabase && selectedSeason) {

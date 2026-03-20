@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAdminAuthenticated, adminLogout } from '../../lib/api';
-import { supabase } from '../../lib/supabase';
-import type { Season } from '../../types';
+import { useSeasons } from '../../lib/useSeasons';
 
 export function AdminDashboard() {
   const [auth, setAuth] = useState<boolean | null>(null);
-  const [seasons, setSeasons] = useState<Season[]>([]);
+  const { seasons } = useSeasons();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,13 +14,6 @@ export function AdminDashboard() {
       if (!ok) navigate('/admin/login');
     });
   }, [navigate]);
-
-  useEffect(() => {
-    if (supabase && auth) {
-      supabase.from('seasons').select('*').order('created_at', { ascending: false })
-        .then(({ data }) => setSeasons(data || []));
-    }
-  }, [auth]);
 
   const handleLogout = () => {
     adminLogout();

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Participant, Season } from '../types';
+import { useSeasons } from '../lib/useSeasons';
+import type { Participant } from '../types';
 
 interface LeaderboardRow {
   participant: Participant;
@@ -9,32 +10,13 @@ interface LeaderboardRow {
 }
 
 export function Home() {
-  const [seasons, setSeasons] = useState<Season[]>([]);
+  const { seasons, loading, error } = useSeasons();
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!supabase) {
-      setError('Supabase not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env');
-      setLoading(false);
-      return;
-    }
-
-    void (async () => {
-      try {
-        const { data, error: e } = await supabase.from('seasons').select('*').order('created_at', { ascending: false });
-        if (e) throw e;
-        setSeasons(data || []);
-        if (data?.length && !selectedSeason) setSelectedSeason(data[0].id);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    if (seasons.length > 0 && !selectedSeason) setSelectedSeason(seasons[0].id);
+  }, [seasons, selectedSeason]);
 
   useEffect(() => {
     if (!supabase || !selectedSeason) return;
