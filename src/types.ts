@@ -33,6 +33,8 @@ export interface Match {
   venue: string | null;
   match_type: MatchType;
   created_at: string;
+  /** Set when admin saves standings; used for /matches sort */
+  standings_updated_at?: string | null;
 }
 
 export interface Standing {

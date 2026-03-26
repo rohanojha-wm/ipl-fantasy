@@ -72,6 +72,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (insertErr) throw insertErr;
     }
 
+    const { error: stampErr } = await supabase
+      .from('matches')
+      .update({ standings_updated_at: new Date().toISOString() })
+      .eq('id', matchId);
+    if (stampErr) throw stampErr;
+
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error(err);

@@ -43,12 +43,20 @@ export function Matches() {
         });
       }
 
-      const result: MatchWithStandings[] = matchList.map((m) => {
-        const st = (byMatch[m.id] || []).sort((a, b) => a.position - b.position);
-        return { ...m, standings: st };
+      const withStandings: MatchWithStandings[] = matchList
+        .map((m) => {
+          const st = (byMatch[m.id] || []).sort((a, b) => a.position - b.position);
+          return { ...m, standings: st };
+        })
+        .filter((m) => m.standings.length > 0);
+
+      withStandings.sort((a, b) => {
+        const ta = a.standings_updated_at || a.created_at || a.match_date;
+        const tb = b.standings_updated_at || b.created_at || b.match_date;
+        return tb.localeCompare(ta);
       });
 
-      setMatches(result);
+      setMatches(withStandings);
     };
 
     fetch();
@@ -77,24 +85,20 @@ export function Matches() {
               <span className="match-type">{m.match_type}</span>
             </div>
             <div className="match-standings">
-              {m.standings.length === 0 ? (
-                <span className="no-standings">No standings yet</span>
-              ) : (
-                m.standings.map((s, i) => (
-                  <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                    {i > 0 && <span className="standing-arrow">→</span>}
-                    <span className="standing-chip">
-                      {s.participant.name}
-                      <span className="amount">${Number(s.dollars_earned || 0).toFixed(2)}</span>
-                    </span>
+              {m.standings.map((s, i) => (
+                <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                  {i > 0 && <span className="standing-arrow">→</span>}
+                  <span className="standing-chip">
+                    {s.participant.name}
+                    <span className="amount">${Number(s.dollars_earned || 0).toFixed(2)}</span>
                   </span>
-                ))
-              )}
+                </span>
+              ))}
             </div>
           </div>
         ))}
       </div>
-      {matches.length === 0 && <p className="empty">No matches yet.</p>}
+      {matches.length === 0 && <p className="empty">No completed matches yet. Standings appear here after they are saved in Admin.</p>}
     </div>
   );
 }

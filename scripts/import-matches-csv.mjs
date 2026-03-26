@@ -23,6 +23,22 @@ import { createClient } from '@supabase/supabase-js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/** Accepts YYYY-MM-DD or DD-MMM-YYYY (e.g. 13-Apr-2026) for Postgres DATE */
+function normalizeMatchDate(s) {
+  if (!s) return null;
+  const str = String(s).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+  const m = str.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/i);
+  if (!m) return str;
+  const months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  const mon = months[m[2].slice(0, 3).toLowerCase()];
+  if (mon === undefined) return str;
+  const day = parseInt(m[1], 10);
+  const year = parseInt(m[3], 10);
+  const d = new Date(Date.UTC(year, mon, day));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
 function parseCSV(text) {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return { headers: [], rows: [] };
@@ -62,7 +78,7 @@ async function main() {
   const matches = rows
     .filter((r) => r.match_date && r.team1 && r.team2 && r.match_type)
     .map((r) => ({
-      match_date: r.match_date,
+      match_date: normalizeMatchDate(r.match_date),
       match_time: r.match_time || null,
       team1: r.team1,
       team2: r.team2,
@@ -90,7 +106,8 @@ async function main() {
   const supabase = createClient(url, key);
 
   let seasonId;
-  const { data: existing } = await supabase.from('seasons').select('id').eq('name', seasonName).single();
+  const { data: existingRows } = await supabase.from('seasons').select('id').eq('name', seasonName).order('created_at', { ascending: false }).limit(1);
+  const existing = existingRows?.[0];
   if (existing) {
     seasonId = existing.id;
     console.log('Using existing season:', seasonName);
